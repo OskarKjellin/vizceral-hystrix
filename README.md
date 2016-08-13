@@ -31,7 +31,7 @@ Timeouts are treated as warnings (yellow dots), errors are danger (red dots).
     "port": 8080, //required, port of the turbine cluster
     "path": "/turbine/turbine.stream?cluster=", //optional, path to the stream on the turbine cluster. Defauls to /turbine.stream?cluster=
   },
-  "entryClusters": [  //required, some some initial clusters to tail
+  "entryClusters": [  //required, some initial clusters to tail
     "prod-proxy",
     "someinternalcomponent"
   ],
