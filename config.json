@@ -1,0 +1,21 @@
+{
+  "httpPort": 8081,
+  "turbine": {
+    "host": "127.0.0.1",
+    "port": 8080,
+    "path": "/turbine/turbine.stream?cluster="
+  },
+  "entryClusters": [
+    "prod-proxy",
+    "someinternalcomponent"
+  ],
+  "internetClusters": [
+    "prod-proxy"
+  ],
+  "hystrixGroupToCluster": [
+    {
+      "group": "hystrix-prod-proxy",
+      "cluster": "prod-proxy"
+    }
+  ]
+}
