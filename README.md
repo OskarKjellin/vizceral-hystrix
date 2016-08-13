@@ -47,4 +47,10 @@ Timeouts are treated as warnings (yellow dots), errors are danger (red dots).
 }
 ```
 
+**Running**
+
+To run the app, send the config file as the first argument:
+```
+java -jar vizceral-hystrix-1.0.jar
+```
 
