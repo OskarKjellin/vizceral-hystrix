@@ -1,7 +1,7 @@
 package vizceral.hystrix;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpMethod;
 import io.reactivex.netty.RxNetty;
@@ -56,7 +56,7 @@ public class HystrixReader
                     logger.info("Http code {} for path {}", c.getStatus().code(), path);
                     if (c.getStatus().code() != 200)
                     {
-                       return Observable.error(new UnknownClusterException("Turbine does not recognize cluster " + cluster));
+                        return Observable.error(new UnknownClusterException("Turbine does not recognize cluster " + cluster));
                     }
                     return c.getContent();
                 })
@@ -64,9 +64,16 @@ public class HystrixReader
                 {
                     try
                     {
-                        ObjectNode objectNode = (ObjectNode) objectMapper.readTree(sse.contentAsString());
+                        JsonNode objectNode = objectMapper.readTree(sse.contentAsString());
                         if (!"HystrixCommand".equals(objectNode.get("type").asText()))
                         {
+                            return null;
+                        }
+                        String commandName = objectNode.get("name").asText();
+                        String group = configuration.getEffectiveGroup(objectNode.get("group").asText());
+                        if (group.isEmpty())
+                        {
+                            logger.warn("Invalid hystrix event with an empty group for command {}", commandName);
                             return null;
                         }
                         return HystrixEvent
@@ -75,8 +82,8 @@ public class HystrixReader
                                 .timeoutCount(objectNode.get("rollingCountTimeout").asInt() / 10)
                                 .errorCount((objectNode.get("rollingCountFailure").asInt() + objectNode.get("rollingCountSemaphoreRejected").asInt() + objectNode.get("rollingCountShortCircuited").asInt()) / 10)
                                 .requestCount(objectNode.get("rollingCountSuccess").asInt() / 10)
-                                .group(configuration.getEffectiveGroup(objectNode.get("group").asText()))
-                                .name(objectNode.get("name").asText())
+                                .group(group)
+                                .name(commandName)
                                 .isCircuitBreakerOpen(objectNode.get("isCircuitBreakerOpen").asBoolean())
                                 .build();
                     }
