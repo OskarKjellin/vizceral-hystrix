@@ -54,3 +54,14 @@ To run the app, send the config file as the first argument:
 java -jar vizceral-hystrix-1.0.0.jar config.json
 ```
 
+
+***Running in docker***
+
+If you prefer running in docker, simply replace the config.json and run
+```
+docker build -t vichyz . &&  docker run --name vichyz -p "8080:8080" -p "8081:8081" vichyz
+``` 
+
+Then open localhost:8080.
+
+If you map port 8081 or change it in the configuration, you'll have to replace it in trafficFlow.jsx
