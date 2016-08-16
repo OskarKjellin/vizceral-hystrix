@@ -1,9 +1,15 @@
 {
+  "regionName": "eu-west-1",
   "httpPort": 8081,
   "turbine": {
     "host": "127.0.0.1",
     "port": 8080,
-    "path": "/turbine/turbine.stream?cluster="
+    "path": "/turbine/turbine.stream?cluster=",
+    "secure": true,
+    "auth": {
+      "username": "username",
+      "password": "password"
+    }
   },
   "entryClusters": [
     "prod-proxy",
