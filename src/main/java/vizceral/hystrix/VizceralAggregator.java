@@ -48,13 +48,23 @@ public class VizceralAggregator
     }
 
     /**
+     * Gets the configuration.
+     *
+     * @return The configuration.
+     */
+    public Configuration getConfiguration()
+    {
+        return configuration;
+    }
+
+    /**
      * Gets a vizceral json
      *
      * @return JsonNode that can be fed to vizceral.
      */
     public JsonNode vizceral()
     {
-        String regionName = "region";
+        String regionName = configuration.getRegionName();
         ObjectNode objectNode = JsonNodeFactory.instance.objectNode()
                 .put("renderer", "global")
                 .put("name", "edge");
@@ -118,26 +128,28 @@ public class VizceralAggregator
 
             }
         }
-        for (String entryCluster : configuration.getInternetClusters())
+        for (String internetCluster : configuration.getInternetClusters())
         {
-            HystrixCluster cluster = clusters.get(entryCluster);
+            HystrixCluster cluster = clusters.get(internetCluster);
             ObjectNode connectionNode = connectionNodes.addObject()
                     .put("source", "INTERNET")
-                    .put("target", entryCluster);
+                    .put("target", internetCluster);
             connectionNode.putObject("metadata").put("streaming", 1);
             connectionNode.putObject("metrics").put("normal", cluster.getSumOfOutgoingRequests());
         }
         regionNode.put("maxVolume", maxVolume);
-        //Requests are all nodes that are leaving the entry clusters (not really true, but close enough)
+        //Requests are all nodes that are leaving the internet clusters (not really true, but close enough)
         int currentRequests = clusters.values().stream().filter(c -> configuration.isInternetCluster(c.getName())).mapToInt(c -> c.getSumOfOutgoingRequests()).sum();
 
-        objectNode.putArray("connections")
+        ObjectNode internetConnection = objectNode.putArray("connections")
                 .addObject()
                 .put("source", "INTERNET")
-                .put("target", regionName)
+                .put("target", regionName);
+        internetConnection
                 .putObject("metrics")
                 .put("normal", currentRequests);
-
+        internetConnection.putArray("notices");
+        internetConnection.put("class", "normal");
         objectNode.put("maxVolume", maxVolume);
         return objectNode;
     }
@@ -175,7 +187,7 @@ public class VizceralAggregator
             }
             else
             {
-                logger.error("Exception from hystrix event", ex);
+                logger.error("Exception from hystrix event for cluster " + clusterName, ex);
             }
         });
     }
