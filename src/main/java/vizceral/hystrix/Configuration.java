@@ -25,6 +25,10 @@ public class Configuration
     private Set<String> internetClusters = new HashSet<>();
     private final Map<String, String> hystrixGroupsToCluster = new HashMap<>();
     private int httpPort = 8081;
+    private String regionName;
+    private boolean secure;
+    private String username;
+    private String password;
 
     private Configuration(String fileName)
     {
@@ -119,6 +123,56 @@ public class Configuration
     }
 
     /**
+     * Gets if we should use SSL.
+     *
+     * @return True to use SSL, otherwise false.
+     */
+    public boolean isSecure()
+    {
+        return secure;
+    }
+
+    /**
+     * Gets if we should use basic auth.
+     *
+     * @return true if we should use basic auth, otherwise false.
+     */
+    public boolean authEnabled()
+    {
+        return username != null;
+    }
+
+    /**
+     * Gets the username to use for basic auth.
+     *
+     * @return The username for basic auth.
+     */
+    public String getUsername()
+    {
+        return username;
+    }
+
+    /**
+     * Gets the password to use for basic auth.
+     *
+     * @return The password for basic auth.
+     */
+    public String getPassword()
+    {
+        return password;
+    }
+
+    /**
+     * Gets the name of the region.
+     *
+     * @return Region name.
+     */
+    public String getRegionName()
+    {
+        return regionName;
+    }
+
+    /**
      * Gets the port to start the http server on. Default 8081.
      *
      * @return The port to listen on.
@@ -160,6 +214,15 @@ public class Configuration
         {
             throw new ConfigurationException("Exception when reading file", e);
         }
+        if (!objectNode.has("regionName"))
+        {
+            throw new ConfigurationException("/regionName is required");
+        }
+        if (!objectNode.get("regionName").isTextual())
+        {
+            throw new ConfigurationException("/regionName must be a string");
+        }
+        regionName = objectNode.get("regionName").asText();
         //Http conf
         if (objectNode.has("httpPort"))
         {
@@ -191,6 +254,41 @@ public class Configuration
         if (!turbineNode.get("port").isInt())
         {
             throw new ConfigurationException("/turbine/port must be an int");
+        }
+        if (turbineNode.has("secure"))
+        {
+            JsonNode secureNode = turbineNode.get("secure");
+            if (!secureNode.isBoolean())
+            {
+                throw new ConfigurationException("/turbine/secure must be a boolean");
+            }
+            secure = secureNode.asBoolean();
+        }
+        if (turbineNode.has("auth"))
+        {
+            JsonNode authNode = turbineNode.get("auth");
+            if (!authNode.isObject())
+            {
+                throw new ConfigurationException("/turbine/auth must be am object");
+            }
+            if (!authNode.has("username"))
+            {
+                throw new ConfigurationException("/turbine/auth/username must be exist if /turbine/auth exists");
+            }
+            if (!authNode.has("password"))
+            {
+                throw new ConfigurationException("/turbine/auth/password must be exist if /turbine/password exists");
+            }
+            if (!authNode.get("username").isTextual())
+            {
+                throw new ConfigurationException("/turbine/auth/username must be a string");
+            }
+            if (!authNode.get("password").isTextual())
+            {
+                throw new ConfigurationException("/turbine/auth/password must be a string");
+            }
+            username = authNode.get("username").asText();
+            password = authNode.get("password").asText();
         }
         turbineHost = turbineNode.get("host").asText();
         turbinePort = turbineNode.get("port").asInt();
