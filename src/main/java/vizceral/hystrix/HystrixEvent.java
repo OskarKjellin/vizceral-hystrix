@@ -9,6 +9,7 @@ public class HystrixEvent
     private final int timeoutCount;
     private final int requestCount;
     private final int errorCount;
+    private final int totalRequestCount;
     private final boolean isCircuitBreakerOpen;
     private final String group;
     private final String name;
@@ -20,9 +21,24 @@ public class HystrixEvent
         timeoutCount = builder.timeoutCount;
         requestCount = builder.requestCount;
         errorCount = builder.errorCount;
+        totalRequestCount = builder.totalRequestCount;
         isCircuitBreakerOpen = builder.isCircuitBreakerOpen;
         group = builder.group;
         name = builder.name;
+    }
+
+    public static Builder newBuilder(HystrixEvent copy)
+    {
+        Builder builder = new Builder();
+        builder.rejectedCount = copy.rejectedCount;
+        builder.timeoutCount = copy.timeoutCount;
+        builder.requestCount = copy.requestCount;
+        builder.errorCount = copy.errorCount;
+        builder.totalRequestCount = copy.totalRequestCount;
+        builder.isCircuitBreakerOpen = copy.isCircuitBreakerOpen;
+        builder.group = copy.group;
+        builder.name = copy.name;
+        return builder;
     }
 
     /**
@@ -105,6 +121,15 @@ public class HystrixEvent
         return isCircuitBreakerOpen;
     }
 
+    /**
+     * Gets total count of all requests, rejected, timeouts, error, success etc.
+     *
+     * @return Sum of all requests.
+     */
+    public int getTotalRequestCount()
+    {
+        return totalRequestCount;
+    }
 
     @Override
     public String toString()
@@ -128,6 +153,7 @@ public class HystrixEvent
     public static final class Builder
     {
         private int errorCount;
+        private int totalRequestCount;
         private boolean isCircuitBreakerOpen;
         private String group;
         private String name;
@@ -142,6 +168,12 @@ public class HystrixEvent
         public Builder errorCount(int errorCount)
         {
             this.errorCount = errorCount;
+            return this;
+        }
+
+        public Builder totalRequestCount(int totalRequestCount)
+        {
+            this.totalRequestCount = totalRequestCount;
             return this;
         }
 

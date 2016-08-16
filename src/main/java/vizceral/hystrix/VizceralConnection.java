@@ -1,5 +1,7 @@
 package vizceral.hystrix;
 
+import java.util.List;
+
 /**
  * A connection between two nodes in Vizceral.
  */
@@ -9,6 +11,7 @@ public class VizceralConnection
     private final int errors;
     private final int requests;
     private final int timeouts;
+    private final List<VizceralNotice> notices;
 
     /**
      * Creates a new Vizceral connection.
@@ -17,13 +20,15 @@ public class VizceralConnection
      * @param errors   The number of errors seen in the period.
      * @param requests The number of successful requests seen in the period.
      * @param timeouts The number of timeouts seen in the period.
+     * @param notices  The notices to show.
      */
-    public VizceralConnection(String name, int errors, int requests, int timeouts)
+    public VizceralConnection(String name, int errors, int requests, int timeouts, List<VizceralNotice> notices)
     {
         this.name = name;
         this.errors = errors;
         this.requests = requests;
         this.timeouts = timeouts;
+        this.notices = notices;
     }
 
     /**
@@ -66,4 +71,13 @@ public class VizceralConnection
         return timeouts;
     }
 
+    /**
+     * Gets notices for this connection.
+     *
+     * @return List of connections.
+     */
+    public List<VizceralNotice> getNotices()
+    {
+        return notices;
+    }
 }

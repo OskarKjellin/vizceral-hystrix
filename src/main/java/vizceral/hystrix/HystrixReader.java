@@ -3,17 +3,12 @@ package vizceral.hystrix;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.pipeline.PipelineConfigurators;
 import io.reactivex.netty.pipeline.ssl.DefaultFactories;
-import io.reactivex.netty.pipeline.ssl.SSLEngineFactory;
 import io.reactivex.netty.protocol.http.client.HttpClient;
 import io.reactivex.netty.protocol.http.client.HttpClientBuilder;
 import io.reactivex.netty.protocol.http.client.HttpClientRequest;
@@ -22,8 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -111,6 +104,7 @@ public class HystrixReader
                                 .timeoutCount(objectNode.get("rollingCountTimeout").asInt() / 10)
                                 .errorCount((objectNode.get("rollingCountFailure").asInt() + objectNode.get("rollingCountSemaphoreRejected").asInt() + objectNode.get("rollingCountShortCircuited").asInt()) / 10)
                                 .requestCount(objectNode.get("rollingCountSuccess").asInt() / 10)
+                                .totalRequestCount(objectNode.get("rollingCountEmit").asInt() / 10)
                                 .group(group)
                                 .name(commandName)
                                 .isCircuitBreakerOpen(objectNode.get("isCircuitBreakerOpen").asBoolean())

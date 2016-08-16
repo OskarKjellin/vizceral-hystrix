@@ -27,6 +27,8 @@ Timeouts are treated as warnings (yellow dots), errors are danger (red dots).
 {
   "regionName": "eu-west-1", //Required, the name of the region
   "httpPort": 8081, (optional) the http port to listen on
+  "timeoutPercentageThreshold": 0, (optional) percentage of timeouts before showing a warning on connection, range 0-1
+  "failurePercentageThreshold": 0, (optional) percentage of timeouts before showing a warning on connection, range 0-1
   "turbine": {
     "host": "127.0.0.1", //required, host of the turbine cluster
     "port": 8080, //required, port of the turbine cluster

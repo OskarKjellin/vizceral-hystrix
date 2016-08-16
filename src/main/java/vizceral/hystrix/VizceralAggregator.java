@@ -110,12 +110,12 @@ public class VizceralAggregator
         }
 
         //Max volume in cluster
-        int maxVolume = clusters.values().stream().mapToInt(c -> c.maxValue.get()).max().orElse(0);
+        int maxVolume = clusters.values().stream().mapToInt(c -> c.getMaxValue()).max().orElse(0);
 
         ArrayNode connectionNodes = regionNode.putArray("connections");
         for (Map.Entry<String, HystrixCluster> cluster : clusters.entrySet())
         {
-            for (VizceralConnection connection : cluster.getValue().getConnections())
+            for (VizceralConnection connection : cluster.getValue().getConnections(configuration))
             {
                 ObjectNode connectionNode = connectionNodes.addObject()
                         .put("source", cluster.getKey())
@@ -125,7 +125,24 @@ public class VizceralAggregator
                         .put("danger", connection.getErrors())
                         .put("warning", connection.getTimeouts())
                         .put("normal", connection.getRequests());
-
+                ArrayNode notices = connectionNode.withArray("notices");
+                for (VizceralNotice notice : connection.getNotices())
+                {
+                    ObjectNode noticeNode = notices.addObject();
+                    noticeNode.put("title", notice.getTitle());
+                    if (notice.getSubtitle() != null)
+                    {
+                        noticeNode.put("subtitle", notice.getSubtitle());
+                    }
+                    if (notice.getLink() != null)
+                    {
+                        noticeNode.put("linked", notice.getLink());
+                    }
+                    if (notice.getSeverity() != null)
+                    {
+                        noticeNode.put("severity", notice.getSeverity().get());
+                    }
+                }
             }
         }
         for (String internetCluster : configuration.getInternetClusters())

@@ -29,6 +29,8 @@ public class Configuration
     private boolean secure;
     private String username;
     private String password;
+    private Double timeoutPercentageThreshold;
+    private Double failurePercentageThreshold;
 
     private Configuration(String fileName)
     {
@@ -198,6 +200,26 @@ public class Configuration
         return configuration;
     }
 
+    /**
+     * Gets the threshold for when a connection is set to warning given percentage of timeouts.
+     *
+     * @return The threshold, 0-1, or null if not activated.
+     */
+    public Double getTimeoutPercentageThreshold()
+    {
+        return timeoutPercentageThreshold;
+    }
+
+    /**
+     * Gets the threshold for when a connection is set to warning given percentage of failures.
+     *
+     * @return The threshold, 0-1, or null if not activated.
+     */
+    public Double getFailurePercentageThreshold()
+    {
+        return failurePercentageThreshold;
+    }
+
     private void load() throws ConfigurationException
     {
         File file = new File(fileName);
@@ -223,6 +245,31 @@ public class Configuration
             throw new ConfigurationException("/regionName must be a string");
         }
         regionName = objectNode.get("regionName").asText();
+        if (objectNode.has("timeoutPercentageThreshold"))
+        {
+            if (!objectNode.get("timeoutPercentageThreshold").isDouble() && !objectNode.get("timeoutPercentageThreshold").isInt())
+            {
+                throw new ConfigurationException("/timeoutPercentageThreshold must be a double");
+            }
+            timeoutPercentageThreshold = objectNode.get("timeoutPercentageThreshold").asDouble();
+            if (timeoutPercentageThreshold < 0 || timeoutPercentageThreshold > 1)
+            {
+                throw new ConfigurationException("/timeoutPercentageThreshold must be within range of 0-1");
+            }
+        }
+        if (objectNode.has("failurePercentageThreshold"))
+        {
+            if (!objectNode.get("failurePercentageThreshold").isDouble() && !objectNode.get("failurePercentageThreshold").isInt())
+            {
+                throw new ConfigurationException("/failurePercentageThreshold must be a double");
+            }
+            failurePercentageThreshold = objectNode.get("failurePercentageThreshold").asDouble();
+            if (failurePercentageThreshold < 0 || failurePercentageThreshold > 1)
+            {
+                throw new ConfigurationException("/failurePercentageThreshold must be within range of 0-1");
+            }
+
+        }
         //Http conf
         if (objectNode.has("httpPort"))
         {

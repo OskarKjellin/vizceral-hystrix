@@ -1,5 +1,6 @@
 package vizceral.hystrix;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,9 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HystrixCluster
 {
+    private static final DecimalFormat FORMAT = new DecimalFormat("#.##");
     private final String name;
     private final ConcurrentMap<String, HystrixEvent> events = new ConcurrentHashMap<>();
-    AtomicInteger maxValue = new AtomicInteger();
+    private final AtomicInteger maxValue = new AtomicInteger();
 
     /**
      * Creates a new cluster
@@ -37,7 +39,7 @@ public class HystrixCluster
     public void addEvent(HystrixEvent event)
     {
         events.put(event.getName(), event);
-        int currentSum = events.values().stream().mapToInt(c -> c.getRequestCount()).sum();
+        int currentSum = events.values().stream().mapToInt(c -> c.getTotalRequestCount()).sum();
         int before = maxValue.get();
         if (currentSum > before)
         {
@@ -53,7 +55,7 @@ public class HystrixCluster
      */
     public int getSumOfOutgoingRequests()
     {
-        return events.values().stream().mapToInt(c -> c.getRequestCount()).sum();
+        return events.values().stream().mapToInt(c -> c.getTotalRequestCount()).sum();
     }
 
     /**
@@ -79,18 +81,22 @@ public class HystrixCluster
     /**
      * Gets all connections going out from this cluster.
      *
+     * @param configuration The configuration to use for creating notices.
+     *
      * @return Collection of connections.
      */
-    public Collection<VizceralConnection> getConnections()
+    public Collection<VizceralConnection> getConnections(Configuration configuration)
     {
         Map<String, AtomicInteger> errorsPerGroup = new HashMap<>();
         Map<String, AtomicInteger> requestsPerGroup = new HashMap<>();
         Map<String, AtomicInteger> timeoutsPerGroup = new HashMap<>();
+        Map<String, List<VizceralNotice>> notices = new HashMap<>();
         for (HystrixEvent hystrixEvent : events.values())
         {
             String group = hystrixEvent.getGroup();
             if (!errorsPerGroup.containsKey(group))
             {
+                notices.put(group, new ArrayList<>());
                 errorsPerGroup.put(group, new AtomicInteger());
                 requestsPerGroup.put(group, new AtomicInteger());
                 timeoutsPerGroup.put(group, new AtomicInteger());
@@ -98,14 +104,44 @@ public class HystrixCluster
             errorsPerGroup.get(group).addAndGet(hystrixEvent.getErrorCount());
             requestsPerGroup.get(group).addAndGet(hystrixEvent.getRequestCount());
             timeoutsPerGroup.get(group).addAndGet(hystrixEvent.getTimeoutCount());
+            double failurePercentage = (double) hystrixEvent.getErrorCount() / hystrixEvent.getTotalRequestCount();
+            double timeoutPercentage = (double) hystrixEvent.getTimeoutCount() / hystrixEvent.getTotalRequestCount();
+            if (configuration.getTimeoutPercentageThreshold() != null)
+            {
+                if (configuration.getTimeoutPercentageThreshold() < timeoutPercentage)
+                {
+                    notices.get(group).add(VizceralNotice.newBuilder().severity(NoticeSeverity.WARNING).title(FORMAT.format(timeoutPercentage * 100) + "% timeouts").subtitle(hystrixEvent.getName()).build());
+                }
+            }
+            if (configuration.getFailurePercentageThreshold() != null)
+            {
+                if (configuration.getFailurePercentageThreshold() < failurePercentage)
+                {
+                    notices.get(group).add(VizceralNotice.newBuilder().severity(NoticeSeverity.ERROR).title(FORMAT.format(failurePercentage * 100) + "% failures").subtitle(hystrixEvent.getName()).build());
+                }
+            }
+            if (hystrixEvent.isCircuitBreakerOpen())
+            {
+                notices.get(group).add(VizceralNotice.newBuilder().severity(NoticeSeverity.ERROR).title("Circuit breaker triggered").subtitle(hystrixEvent.getName()).build());
+            }
         }
         List<VizceralConnection> connections = new ArrayList<>();
         for (String group : errorsPerGroup.keySet())
         {
-            VizceralConnection connection = new VizceralConnection(group, errorsPerGroup.get(group).get(), requestsPerGroup.get(group).get(), timeoutsPerGroup.get(group).get());
+            VizceralConnection connection = new VizceralConnection(group, errorsPerGroup.get(group).get(), requestsPerGroup.get(group).get(), timeoutsPerGroup.get(group).get(), notices.get(group));
             connections.add(connection);
         }
         return Collections.unmodifiableCollection(connections);
+    }
+
+    /**
+     * Gets the maximum number of requests per second seen.
+     *
+     * @return Maximum number of requests seen.
+     */
+    public int getMaxValue()
+    {
+        return maxValue.intValue();
     }
 
     /**

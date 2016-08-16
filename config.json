@@ -1,6 +1,8 @@
 {
   "regionName": "eu-west-1",
   "httpPort": 8081,
+  "timeoutPercentageThreshold": 0,
+  "failurePercentageThreshold": 0,
   "turbine": {
     "host": "127.0.0.1",
     "port": 8080,
