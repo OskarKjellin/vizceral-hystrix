@@ -3,17 +3,29 @@ package vizceral.hystrix;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.pipeline.PipelineConfigurators;
+import io.reactivex.netty.pipeline.ssl.DefaultFactories;
+import io.reactivex.netty.pipeline.ssl.SSLEngineFactory;
 import io.reactivex.netty.protocol.http.client.HttpClient;
+import io.reactivex.netty.protocol.http.client.HttpClientBuilder;
 import io.reactivex.netty.protocol.http.client.HttpClientRequest;
 import io.reactivex.netty.protocol.http.sse.ServerSentEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Reads a hystrix event stream (typically from turbine) and emits events when items are received in the SSE stream.
@@ -36,7 +48,13 @@ public class HystrixReader
     {
         this.configuration = configuration;
         this.cluster = cluster;
-        rxNetty = RxNetty.createHttpClient(configuration.getTurbineHost(), configuration.getTurbinePort(), PipelineConfigurators.<ByteBuf>clientSseConfigurator());
+        HttpClientBuilder<ByteBuf, ServerSentEvent> builder = RxNetty.newHttpClientBuilder(configuration.getTurbineHost(), configuration.getTurbinePort());
+        builder.pipelineConfigurator(PipelineConfigurators.clientSseConfigurator());
+        if (configuration.isSecure())
+        {
+            builder.withSslEngineFactory(DefaultFactories.trustAll());
+        }
+        rxNetty = builder.build();
     }
 
     /**
@@ -49,16 +67,27 @@ public class HystrixReader
         String path = configuration.getTurbinePath(cluster);
         logger.info("Starting to read from path {}", path);
         final HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
-
+        if (configuration.authEnabled())
+        {
+            String authHeader = "Basic " + Base64.encode(Unpooled.copiedBuffer(configuration.getUsername() + ":" + configuration.getPassword(), StandardCharsets.UTF_8)).toString(StandardCharsets.UTF_8);
+            request.getHeaders().add("Authorization", authHeader);
+        }
         return rxNetty.submit(request)
                 .flatMap(c ->
                 {
                     logger.info("Http code {} for path {}", c.getStatus().code(), path);
-                    if (c.getStatus().code() != 200)
+                    if (c.getStatus().code() == 404)
                     {
                         return Observable.error(new UnknownClusterException("Turbine does not recognize cluster " + cluster));
                     }
-                    return c.getContent();
+                    else if (c.getStatus().code() != 200)
+                    {
+                        return Observable.error(new IllegalStateException("Got " + c.getStatus().code() + " from turbine"));
+                    }
+                    else
+                    {
+                        return c.getContent();
+                    }
                 })
                 .map(sse ->
                 {
