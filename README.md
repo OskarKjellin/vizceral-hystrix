@@ -25,11 +25,17 @@ Timeouts are treated as warnings (yellow dots), errors are danger (red dots).
 
 ```
 {
+  "regionName": "eu-west-1", //Required, the name of the region
   "httpPort": 8081, (optional) the http port to listen on
   "turbine": {
     "host": "127.0.0.1", //required, host of the turbine cluster
     "port": 8080, //required, port of the turbine cluster
-    "path": "/turbine/turbine.stream?cluster=", //optional, path to the stream on the turbine cluster. Defauls to /turbine.stream?cluster=
+    "path": "/turbine/turbine.stream?cluster=", //optional, path to the stream on the turbine cluster. Defauls to /turbine.stream?cluster=,
+    "secure": true,  //optional, if we should access turbine over ssl
+    "auth": {   //optional, if we should use basic auth
+      "username": "username", //basic auth username             
+      "password": "password"  //basic auth password
+    }    
   },
   "entryClusters": [  //required, some initial clusters to tail
     "prod-proxy",
@@ -54,6 +60,11 @@ To run the app, send the config file as the first argument:
 java -jar vizceral-hystrix-1.0.0.jar config.json
 ```
 
+If you have multiple regions you can specify multiple config files:
+
+```
+java -jar vizceral-hystrix-1.0.0.jar eu-west-1.json eu-west-2.json
+```
 
 ***Running in docker***
 
