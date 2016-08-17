@@ -200,11 +200,11 @@ public class VizceralAggregator
         {
             if (ex instanceof UnknownClusterException)
             {
-                logger.info("Turbine does not recognize cluster " + clusterName);
+                logger.info("Turbine does not recognize cluster " + clusterName + " for region " + configuration.getRegionName());
             }
             else
             {
-                logger.error("Exception from hystrix event for cluster " + clusterName, ex);
+                logger.error("Exception from hystrix event for cluster " + clusterName + " for region " + configuration.getRegionName(), ex);
             }
         });
     }

@@ -62,7 +62,7 @@ public class HystrixReader
         final HttpClientRequest<ByteBuf> request = HttpClientRequest.create(HttpMethod.GET, path);
         if (configuration.authEnabled())
         {
-            String authHeader = "Basic " + Base64.encode(Unpooled.copiedBuffer(configuration.getUsername() + ":" + configuration.getPassword(), StandardCharsets.UTF_8)).toString(StandardCharsets.UTF_8);
+            String authHeader = "Basic " + Base64.encode(Unpooled.copiedBuffer(configuration.getUsername() + ":" + configuration.getPassword(), StandardCharsets.UTF_8)).toString(StandardCharsets.UTF_8).replace("\n", "");
             request.getHeaders().add("Authorization", authHeader);
         }
         return rxNetty.submit(request)
