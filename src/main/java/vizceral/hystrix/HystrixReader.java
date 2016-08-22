@@ -68,7 +68,7 @@ public class HystrixReader
         return rxNetty.submit(request)
                 .flatMap(c ->
                 {
-                    logger.info("Http code {} for path {}", c.getStatus().code(), path);
+                    logger.info("Http code {} for path {} in region {}", c.getStatus().code(), path, configuration.getRegionName());
                     if (c.getStatus().code() == 404)
                     {
                         return Observable.error(new UnknownClusterException("Turbine does not recognize cluster " + cluster));
@@ -116,6 +116,15 @@ public class HystrixReader
                         return null;
                     }
                 })
-                .filter(c -> c != null);
+                .filter(c -> c != null)
+                .onErrorResumeNext(ex ->
+                {
+                    if (!(ex instanceof UnknownClusterException || ex instanceof IllegalStateException))
+                    {
+                        logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry", ex);
+                        return read();
+                    }
+                    return Observable.error(ex);
+                });
     }
 }

@@ -79,7 +79,7 @@ public class VizceralAggregator
                 .put("renderer", "region")
                 .put("name", regionName)
                 .put("class", "normal")
-                .put("updated", System.currentTimeMillis());
+                .put("updated", getUpdated());
 
         ArrayNode regionNodes = regionNode.putArray("nodes");
 
@@ -169,6 +169,11 @@ public class VizceralAggregator
         internetConnection.put("class", "normal");
         objectNode.put("maxVolume", maxVolume);
         return objectNode;
+    }
+
+    private long getUpdated()
+    {
+        return clusters.values().stream().flatMap(c -> c.getEvents().stream()).mapToLong(c -> c.getCreated()).max().orElse(0);
     }
 
     private boolean hasAnyoneCircuitBreakerOnMe(String cluster)
