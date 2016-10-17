@@ -100,11 +100,11 @@ public class HystrixReader
                         }
                         return HystrixEvent
                                 .newBuilder()
-                                .rejectedCount((objectNode.get("rollingCountSemaphoreRejected").asInt() + objectNode.get("rollingCountThreadPoolRejected").asInt()) / 10)
+                                .rejectedCount((sumFields(objectNode, "rollingCountSemaphoreRejected", "rollingCountThreadPoolRejected")) / 10)
                                 .timeoutCount(objectNode.get("rollingCountTimeout").asInt() / 10)
-                                .errorCount((objectNode.get("rollingCountFailure").asInt() + objectNode.get("rollingCountSemaphoreRejected").asInt() + objectNode.get("rollingCountShortCircuited").asInt()) / 10)
+                                .errorCount((sumFields(objectNode, "rollingCountFailure", "rollingCountSemaphoreRejected", "rollingCountShortCircuited") / 10))
                                 .requestCount(objectNode.get("rollingCountSuccess").asInt() / 10)
-                                .totalRequestCount(objectNode.get("rollingCountEmit").asInt() / 10)
+                                .totalRequestCount(objectNode.get("requestCount").asInt() / 10)
                                 .group(group)
                                 .name(commandName)
                                 .isCircuitBreakerOpen(objectNode.get("isCircuitBreakerOpen").asBoolean())
@@ -126,5 +126,18 @@ public class HystrixReader
                     }
                     return Observable.error(ex);
                 });
+    }
+
+    private static int sumFields(JsonNode objectNode, String... keys)
+    {
+        int sum = 0;
+        for (String key : keys)
+        {
+            if (objectNode.has(key))
+            {
+                sum += objectNode.get(key).asInt();
+            }
+        }
+        return sum;
     }
 }

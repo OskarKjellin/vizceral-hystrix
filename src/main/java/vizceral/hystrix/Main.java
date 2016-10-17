@@ -23,7 +23,7 @@ public class Main
         {
             if (args.length < 1)
             {
-                logger.info("Need to specify at least one   configuration file");
+                logger.info("Need to specify at least one configuration file");
                 return;
             }
             List<VizceralAggregator> aggregators = new ArrayList<>();
