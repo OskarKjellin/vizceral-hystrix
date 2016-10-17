@@ -121,15 +121,10 @@ public class HystrixReader
                 .filter(c -> c != null)
                 .onErrorResumeNext(ex ->
                 {
-                    if (ex instanceof ConnectException) {
-                        try {
-                            TimeUnit.SECONDS.sleep(10);
-                        } catch (Exception ignore) { };
-                    }
                     if (!(ex instanceof UnknownClusterException || ex instanceof IllegalStateException))
                     {
-                        logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry", ex);
-                        return read();
+                        logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry in 10 seconds", ex);
+                        return Observable.timer(10, TimeUnit.SECONDS).flatMap(ignore -> read());
                     }
                     return Observable.error(ex);
                 });
