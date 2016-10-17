@@ -16,8 +16,10 @@ import io.reactivex.netty.protocol.http.sse.ServerSentEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
+import java.util.concurrent.TimeUnit;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -119,6 +121,11 @@ public class HystrixReader
                 .filter(c -> c != null)
                 .onErrorResumeNext(ex ->
                 {
+                    if (ex instanceof ConnectException) {
+                        try {
+                            TimeUnit.SECONDS.sleep(10);
+                        } catch (Exception ignore) { };
+                    }
                     if (!(ex instanceof UnknownClusterException || ex instanceof IllegalStateException))
                     {
                         logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry", ex);
