@@ -189,7 +189,7 @@ public class VizceralAggregator
     private void startReader(String clusterName)
     {
         logger.info("Starting to tail cluster " + clusterName);
-        HystrixCluster cluster = new HystrixCluster(clusterName);
+        HystrixCluster cluster = new HystrixCluster(clusterName, configuration.getMaxTrafficTtlSeconds());
         clusters.put(clusterName, cluster);
         HystrixReader reader = new HystrixReader(configuration, clusterName);
         readers.put(clusterName, reader);

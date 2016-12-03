@@ -31,6 +31,7 @@ public class Configuration
     private String password;
     private Double timeoutPercentageThreshold;
     private Double failurePercentageThreshold;
+    private int maxTrafficTtlSeconds = 604800;//one week
 
     private Configuration(String fileName)
     {
@@ -220,6 +221,16 @@ public class Configuration
         return failurePercentageThreshold;
     }
 
+    /**
+     * Gets how many seconds back we should consider max traffic volume. Defaults to 1 week.
+     *
+     * @return Seconds back to count max traffic
+     */
+    public int getMaxTrafficTtlSeconds()
+    {
+        return maxTrafficTtlSeconds;
+    }
+
     private void load() throws ConfigurationException
     {
         File file = new File(fileName);
@@ -279,6 +290,16 @@ public class Configuration
                 throw new ConfigurationException("/httpPort must be an int");
             }
             httpPort = httpPortNode.asInt();
+        }
+        //Max volume
+        if (objectNode.has("maxTrafficTtlSeconds"))
+        {
+            JsonNode maxTrafficTtlSecondsNode = objectNode.get("maxTrafficTtlSeconds");
+            if (!maxTrafficTtlSecondsNode.isInt())
+            {
+                throw new ConfigurationException("/maxTrafficTtlSeconds must be an int");
+            }
+            maxTrafficTtlSeconds = maxTrafficTtlSecondsNode.asInt();
         }
         //Turbine conf
         if (!objectNode.has("turbine"))
