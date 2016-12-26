@@ -138,9 +138,8 @@ public class ZmonMonitoringSystem implements MonitoringSystem
             case 1:
                 return NoticeSeverity.ERROR;
             case 2:
-                return NoticeSeverity.WARNING;
             case 3:
-                return NoticeSeverity.INFO;
+                return NoticeSeverity.WARNING;
             default:
                 logger.error("Unknown priority {}", priority);
                 return NoticeSeverity.ERROR;
