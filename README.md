@@ -56,6 +56,25 @@ Timeouts are treated as warnings (yellow dots), errors are danger (red dots).
 }
 ```
 
+**ZMON integration**
+
+[ZMON](https://zmon.readthedocs.io/en/latest) can be used as a source of alerts 
+
+In order to activate, add this to the config:
+
+```
+  "zmon": {
+    "host": "demo.zmon.io",
+    "port": 443,
+    "path": "/",
+    "secure": true,
+    "headers": {
+      "Authorization": "Basic b"
+    }
+  },
+
+```
+
 **Running**
 
 To run the app, send the config file as the first argument:

@@ -1,13 +1,19 @@
 package vizceral.hystrix;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import vizceral.hystrix.monitoring.MonitoringSystem;
+import vizceral.hystrix.monitoring.zmon.ZmonConfiguration;
+import vizceral.hystrix.monitoring.zmon.ZmonMonitoringSystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,6 +38,7 @@ public class Configuration
     private Double timeoutPercentageThreshold;
     private Double failurePercentageThreshold;
     private int maxTrafficTtlSeconds = 604800;//one week
+    private final List<MonitoringSystem> monitoringSystems = new ArrayList<>();
 
     private Configuration(String fileName)
     {
@@ -229,6 +236,16 @@ public class Configuration
     public int getMaxTrafficTtlSeconds()
     {
         return maxTrafficTtlSeconds;
+    }
+
+    /**
+     * Gets all the monitoring systems.
+     *
+     * @return List of monitoring systems.
+     */
+    public List<MonitoringSystem> getMonitoringSystems()
+    {
+        return monitoringSystems;
     }
 
     private void load() throws ConfigurationException
@@ -445,6 +462,24 @@ public class Configuration
                     throw new ConfigurationException("Duplicate group in /hystrixGroupToCluster " + node.get("group").asText());
                 }
                 hystrixGroupsToCluster.put(node.get("group").asText(), node.get("cluster").asText());
+            }
+        }
+        if (objectNode.has("zmon"))
+        {
+            try
+            {
+                monitoringSystems.add(new ZmonMonitoringSystem(objectMapper.treeToValue(objectNode.get("zmon"), ZmonConfiguration.class)));
+            }
+            catch (JsonProcessingException e)
+            {
+                if (e.getCause() instanceof ConfigurationException)
+                {
+                    throw (ConfigurationException) e.getCause();
+                }
+                else
+                {
+                    throw new ConfigurationException(e);
+                }
             }
         }
     }
