@@ -77,7 +77,7 @@ public class VizceralNotice
         }
         if (getLink() != null)
         {
-            noticeNode.put("linked", getLink());
+            noticeNode.put("link", getLink());
         }
         if (getSeverity() != null)
         {

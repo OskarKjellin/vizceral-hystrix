@@ -2,7 +2,6 @@ package vizceral.hystrix.monitoring.zmon;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.handler.codec.http.HttpMethod;
@@ -71,19 +70,21 @@ public class ZmonMonitoringSystem implements MonitoringSystem
     {
         pollEntities()
                 .subscribe(entities ->
-                {
-                    Map<String, String> applicationsById = new HashMap<>();
-                    for (JsonNode entity : entities)
-                    {
-                        String id = entity.get("id").asText();
-                        String applicationId = entity.has("application_id")
-                                ? entity.get("application_id").asText()
-                                : id;
-                        applicationsById.put(id.toLowerCase(), applicationId.toLowerCase());
-                    }
-                    entitiesToApplication = applicationsById;
-                });
-        pollAlerts().subscribe(alerts -> this.notices = getNotices(alerts));
+                        {
+                            Map<String, String> applicationsById = new HashMap<>();
+                            for (JsonNode entity : entities)
+                            {
+                                String id = entity.get("id").asText();
+                                String applicationId = entity.has("application_id")
+                                        ? entity.get("application_id").asText()
+                                        : id;
+                                applicationsById.put(id.toLowerCase(), applicationId.toLowerCase());
+                            }
+                            entitiesToApplication = applicationsById;
+                        },
+                        ex -> logger.error("Got error polling entities", ex));
+        pollAlerts().subscribe(alerts -> this.notices = getNotices(alerts),
+                ex -> logger.error("Got error polling alerts", ex));
     }
 
     private Map<String, Collection<VizceralNotice>> getNotices(JsonNode alerts)
@@ -159,19 +160,19 @@ public class ZmonMonitoringSystem implements MonitoringSystem
         }
     }
 
-    private Observable<ArrayNode> pollAlerts()
+    private Observable<JsonNode> pollAlerts()
     {
         return Observable.interval(0, 10, TimeUnit.SECONDS)
                 .flatMap(ignore -> get("api/v1/status/active-alerts"))
-                .cast(ArrayNode.class);
+                .onErrorResumeNext(ex -> pollAlerts());
     }
 
 
-    private Observable<ArrayNode> pollEntities()
+    private Observable<JsonNode> pollEntities()
     {
         return Observable.interval(0, 10, TimeUnit.SECONDS)
                 .flatMap(ignore -> get("api/v1/entities"))
-                .cast(ArrayNode.class);
+                .onErrorResumeNext(ex -> pollEntities());
     }
 
     private Observable<JsonNode> get(String url)
