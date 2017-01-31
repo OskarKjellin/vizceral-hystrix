@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.HttpMethod;
 import io.reactivex.netty.RxNetty;
@@ -16,11 +17,11 @@ import io.reactivex.netty.protocol.http.sse.ServerSentEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
-import java.util.concurrent.TimeUnit;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reads a hystrix event stream (typically from turbine) and emits events when items are received in the SSE stream.
@@ -118,16 +119,17 @@ public class HystrixReader
                         return null;
                     }
                 })
-                .filter(c -> c != null)
+                .filter(Objects::nonNull)
                 .onErrorResumeNext(ex ->
                 {
-                    if (!(ex instanceof UnknownClusterException || ex instanceof IllegalStateException))
+                    if (!(ex instanceof UnknownClusterException || ex instanceof IllegalStateException || ex instanceof PrematureChannelClosureException))
                     {
                         logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry in 10 seconds", ex);
                         return Observable.timer(10, TimeUnit.SECONDS).flatMap(ignore -> read());
                     }
                     return Observable.error(ex);
-                });
+                })
+                .doOnCompleted(() -> logger.info("Cluster {} got on completed", cluster));
     }
 
     private static int sumFields(JsonNode objectNode, String... keys)
