@@ -130,7 +130,7 @@ public class HystrixReader
                     return Observable.error(ex);
                 })
                 .doOnCompleted(() -> logger.info("Cluster {} got on completed", cluster))
-                .repeatWhen(observable -> read());
+                .repeatWhen(observable -> observable.flatMap(ignore -> read()));
     }
 
     private static int sumFields(JsonNode objectNode, String... keys)
