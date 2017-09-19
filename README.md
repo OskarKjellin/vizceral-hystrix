@@ -27,6 +27,7 @@ Timeouts are treated as warnings (yellow dots), errors are danger (red dots).
 {
   "regionName": "eu-west-1", //Required, the name of the region
   "httpPort": 8081, (optional) the http port to listen on
+  "maxTrafficTtlSeconds": 604800, (optional) how many seconds back we should consider max traffic volume. Defaults to 1 week.
   "timeoutPercentageThreshold": 0, (optional) percentage of timeouts before showing a warning on connection, range 0-1
   "failurePercentageThreshold": 0, (optional) percentage of timeouts before showing a warning on connection, range 0-1
   "turbine": {
@@ -53,6 +54,25 @@ Timeouts are treated as warnings (yellow dots), errors are danger (red dots).
     }
   ]
 }
+```
+
+**ZMON integration**
+
+[ZMON](https://zmon.readthedocs.io/en/latest) can be used as a source of alerts 
+
+In order to activate, add this to the config:
+
+```
+  "zmon": {
+    "host": "demo.zmon.io",
+    "port": 443,
+    "path": "/",
+    "secure": true,
+    "headers": {
+      "Authorization": "Basic b"
+    }
+  },
+
 ```
 
 **Running**

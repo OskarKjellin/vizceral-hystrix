@@ -1,7 +1,11 @@
 package vizceral.hystrix;
 
+import rx.schedulers.Schedulers;
+import rx.subjects.ReplaySubject;
+
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -19,16 +24,18 @@ public class HystrixCluster
     private static final DecimalFormat FORMAT = new DecimalFormat("#.##");
     private final String name;
     private final ConcurrentMap<String, HystrixEvent> events = new ConcurrentHashMap<>();
-    private final AtomicInteger maxValue = new AtomicInteger();
+    private final ReplaySubject<Integer> maxSubject;
 
     /**
      * Creates a new cluster
      *
-     * @param name The name of the cluster
+     * @param name                 The name of the cluster
+     * @param maxTrafficTtlSeconds How many seconds back in the future we should consider max traffic
      */
-    public HystrixCluster(String name)
+    public HystrixCluster(String name, int maxTrafficTtlSeconds)
     {
         this.name = name;
+        this.maxSubject = ReplaySubject.createWithTime(maxTrafficTtlSeconds, TimeUnit.SECONDS, Schedulers.computation());
     }
 
     /**
@@ -40,13 +47,7 @@ public class HystrixCluster
     {
         events.put(event.getName(), event);
         int currentSum = events.values().stream().mapToInt(c -> c.getTotalRequestCount()).sum();
-        int before = maxValue.get();
-        if (currentSum > before)
-        {
-            //This isn't really thread safe, but least we'll never inadvertently lower the value
-            //Plus, this should only be called from one thread anyhow
-            maxValue.compareAndSet(before, currentSum);
-        }
+        maxSubject.onNext(currentSum);
     }
 
     /***
@@ -141,11 +142,16 @@ public class HystrixCluster
      */
     public int getMaxValue()
     {
-        return maxValue.intValue();
+        int size = maxSubject.size();
+        if (size == 0)
+        {
+            return 0;
+        }
+        return Collections.max(Arrays.asList(maxSubject.getValues(new Integer[size])));
     }
 
     /**
-     * Gets if this cluster has any thread poll/semaphore rejected requests going outwards.
+     * Gets if this cluster has any thread pool/semaphore rejected requests going outwards.
      *
      * @return true if any requests are rejected, false otherwise.
      */

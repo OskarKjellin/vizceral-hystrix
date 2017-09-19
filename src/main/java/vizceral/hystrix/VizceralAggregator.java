@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import vizceral.hystrix.monitoring.MonitoringService;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,6 +26,7 @@ public class VizceralAggregator
     private final ConcurrentMap<String, HystrixCluster> clusters = new ConcurrentHashMap<>();
     private final Map<String, HystrixReader> readers = new HashMap<>();
     private final Configuration configuration;
+    private final MonitoringService monitoringService;
 
     /**
      * Creates a new VizceralAggregator
@@ -34,6 +36,7 @@ public class VizceralAggregator
     public VizceralAggregator(Configuration configuration)
     {
         this.configuration = configuration;
+        this.monitoringService = new MonitoringService(configuration);
     }
 
     /**
@@ -45,6 +48,7 @@ public class VizceralAggregator
         {
             startReader(cluster);
         }
+        monitoringService.start();
     }
 
     /**
@@ -106,6 +110,12 @@ public class VizceralAggregator
             clusterNode
                     .putObject("metadata")
                     .put("streaming", 1);
+            ArrayNode notices = clusterNode.withArray("notices");
+            for (VizceralNotice notice : monitoringService.getAlertsForCluster(clusterName))
+            {
+                notices.add(notice.toJson());
+            }
+
             clusterNode.putArray("nodes");
         }
 
@@ -128,20 +138,7 @@ public class VizceralAggregator
                 ArrayNode notices = connectionNode.withArray("notices");
                 for (VizceralNotice notice : connection.getNotices())
                 {
-                    ObjectNode noticeNode = notices.addObject();
-                    noticeNode.put("title", notice.getTitle());
-                    if (notice.getSubtitle() != null)
-                    {
-                        noticeNode.put("subtitle", notice.getSubtitle());
-                    }
-                    if (notice.getLink() != null)
-                    {
-                        noticeNode.put("linked", notice.getLink());
-                    }
-                    if (notice.getSeverity() != null)
-                    {
-                        noticeNode.put("severity", notice.getSeverity().get());
-                    }
+                    notices.add(notice.toJson());
                 }
             }
         }
@@ -189,7 +186,7 @@ public class VizceralAggregator
     private void startReader(String clusterName)
     {
         logger.info("Starting to tail cluster " + clusterName);
-        HystrixCluster cluster = new HystrixCluster(clusterName);
+        HystrixCluster cluster = new HystrixCluster(clusterName, configuration.getMaxTrafficTtlSeconds());
         clusters.put(clusterName, cluster);
         HystrixReader reader = new HystrixReader(configuration, clusterName);
         readers.put(clusterName, reader);

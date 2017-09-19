@@ -6,7 +6,7 @@
 
     <groupId>vizceral-hystrix</groupId>
     <artifactId>vizceral-hystrix</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.11</version>
     <build>
         <plugins>
             <plugin>
@@ -57,32 +57,37 @@
 
         </plugins>
     </build>
-
+    <properties>
+        <netty.version>4.1.5.Final</netty.version>
+        <jackson.version>2.8.5</jackson.version>
+        <rxjava.version>1.2.2</rxjava.version>
+        <rxjava-math.version>1.0.0</rxjava-math.version>
+    </properties>
     <dependencies><!-- https://mvnrepository.com/artifact/io.reactivex/rxnetty -->
         <dependency>
             <groupId>io.reactivex</groupId>
             <artifactId>rxnetty</artifactId>
-            <version>0.4.17</version>
+            <version>0.4.20</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec-http</artifactId>
-            <version>4.1.0.Beta8</version>
+            <version>${netty.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
-            <version>4.1.0.Beta8</version>
+            <version>${netty.version}</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.1.0.Beta8</version>
+            <version>${netty.version}</version>
         </dependency>
         <dependency>
             <groupId>io.reactivex</groupId>
             <artifactId>rxjava</artifactId>
-            <version>1.0.17</version>
+            <version>${rxjava.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -97,13 +102,18 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.8.1</version>
+            <version>${jackson.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.8.1</version>
+            <version>${jackson.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

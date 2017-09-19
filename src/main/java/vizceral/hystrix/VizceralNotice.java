@@ -1,5 +1,8 @@
 package vizceral.hystrix;
 
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 /**
  * A notice on a connection.
  */
@@ -21,16 +24,6 @@ public class VizceralNotice
     public static Builder newBuilder()
     {
         return new Builder();
-    }
-
-    public static Builder newBuilder(VizceralNotice copy)
-    {
-        Builder builder = new Builder();
-        builder.title = copy.title;
-        builder.subtitle = copy.subtitle;
-        builder.link = copy.link;
-        builder.severity = copy.severity;
-        return builder;
     }
 
     /**
@@ -71,6 +64,26 @@ public class VizceralNotice
     public NoticeSeverity getSeverity()
     {
         return severity;
+    }
+
+
+    public ObjectNode toJson()
+    {
+        ObjectNode noticeNode = JsonNodeFactory.instance.objectNode();
+        noticeNode.put("title", getTitle());
+        if (getSubtitle() != null)
+        {
+            noticeNode.put("subtitle", getSubtitle());
+        }
+        if (getLink() != null)
+        {
+            noticeNode.put("link", getLink());
+        }
+        if (getSeverity() != null)
+        {
+            noticeNode.put("severity", getSeverity().get());
+        }
+        return noticeNode;
     }
 
     public static final class Builder
