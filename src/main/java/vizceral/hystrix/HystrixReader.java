@@ -19,7 +19,6 @@ import rx.Observable;
 import java.util.concurrent.TimeUnit;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -121,12 +120,21 @@ public class HystrixReader
                 .filter(c -> c != null)
                 .onErrorResumeNext(ex ->
                 {
-                    if (!(ex instanceof UnknownClusterException || ex instanceof IllegalStateException))
-                    {
-                        logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry in 10 seconds", ex);
-                        return Observable.timer(10, TimeUnit.SECONDS).flatMap(ignore -> read());
+                    if (ex instanceof UnknownClusterException) {
+                        logger.warn("UnknownClusterException returned");
+                        return Observable.error(ex);
                     }
-                    return Observable.error(ex);
+                    if (ex instanceof IllegalStateException) {
+                        logger.warn("IllegalStateException returned");
+                        return Observable.error(ex);
+                    }
+
+                    logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry in 10s", ex);
+                    try {
+                        TimeUnit.SECONDS.sleep(10);
+                    } catch (Exception ignore) { }
+
+                    return read();
                 });
     }
 
