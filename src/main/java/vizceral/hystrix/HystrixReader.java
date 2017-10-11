@@ -122,12 +122,17 @@ public class HystrixReader
                 .filter(Objects::nonNull)
                 .onErrorResumeNext(ex ->
                 {
-                    if (!(ex instanceof UnknownClusterException || ex instanceof IllegalStateException || ex instanceof PrematureChannelClosureException))
-                    {
-                        logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry in 10 seconds", ex);
-                        return Observable.timer(10, TimeUnit.SECONDS).flatMap(ignore -> read());
-                    }
+                  if (ex instanceof UnknownClusterException) {
+                    logger.warn("UnknownClusterException returned");
+                      return Observable.error(ex);
+                  }
+                  if (ex instanceof IllegalStateException) {
+                    logger.warn("IllegalStateException returned");
                     return Observable.error(ex);
+                  }
+
+                  logger.error("Exception from hystrix event for cluster " + cluster + " for region " + configuration.getRegionName() + ". Will retry in 10s", ex);
+                  return Observable.timer(10, TimeUnit.SECONDS).flatMap(ignore -> read());
                 })
                 .doOnCompleted(() -> logger.info("Cluster {} got on completed", cluster))
                 .repeatWhen(observable -> observable.flatMap(ignore -> read()));
