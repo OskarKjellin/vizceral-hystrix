@@ -3,13 +3,19 @@ package vizceral.hystrix;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.PrematureChannelClosureException;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslProvider;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.reactivex.netty.RxNetty;
 import io.reactivex.netty.pipeline.PipelineConfigurators;
 import io.reactivex.netty.pipeline.ssl.DefaultFactories;
+import io.reactivex.netty.pipeline.ssl.SSLEngineFactory;
 import io.reactivex.netty.protocol.http.client.HttpClient;
 import io.reactivex.netty.protocol.http.client.HttpClientBuilder;
 import io.reactivex.netty.protocol.http.client.HttpClientRequest;
@@ -18,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 
+import javax.net.ssl.SSLEngine;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -48,7 +55,7 @@ public class HystrixReader
         builder.pipelineConfigurator(PipelineConfigurators.clientSseConfigurator());
         if (configuration.isSecure())
         {
-            builder.withSslEngineFactory(DefaultFactories.trustAll());
+            builder.withSslEngineFactory(new HystrixSSLEngineFactory(configuration.getTurbineHost(), configuration.getHttpPort()));
         }
         rxNetty = builder.build();
     }
@@ -149,5 +156,33 @@ public class HystrixReader
             }
         }
         return sum;
+    }
+
+    private static class HystrixSSLEngineFactory implements SSLEngineFactory {
+
+        private final SslContext sslCtx;
+        private final String host;
+        private final int port;
+
+        private HystrixSSLEngineFactory(String host, int port) {
+            this.host = host;
+            this.port = port;
+            try {
+
+                sslCtx = SslContextBuilder
+                        .forClient()
+                        .sslProvider(SslProvider.JDK)
+                        .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                        .build();
+
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to create default SSL context", e);
+            }
+        }
+
+        @Override
+        public SSLEngine createSSLEngine(ByteBufAllocator allocator) {
+            return sslCtx.newEngine(allocator, host, port);
+        }
     }
 }
