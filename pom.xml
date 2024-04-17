@@ -59,7 +59,7 @@
     </build>
     <properties>
         <jackson.version>2.12.7.1</jackson.version>
-        <netty.version>4.1.94.Final</netty.version>
+        <netty.version>4.1.108.Final</netty.version>
         <rxjava.version>1.2.2</rxjava.version>
         <rxjava-math.version>1.0.0</rxjava-math.version>
     </properties>
